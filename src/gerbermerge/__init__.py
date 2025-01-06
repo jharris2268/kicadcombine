@@ -1,12 +1,12 @@
 from .gerberparse import GerberFile
 import sys, os
 
-def demo(show_cmds=True):
+def demo(show_summary=False, show_cmds=False):
     
     #prfxs=['misc/gerber_expr/gerbers/',
     #       'misc/misc_boards_20241217/gerbers/']
     
-    prfxs = [(x,'misc/parts/'+x+'/gerbers') for x in os.listdir('misc/parts')]
+    prfxs = [(yy,zz) for yy,zz in [(x,'misc/small_boards/'+x+'/gerbers') for x in os.listdir('misc/small_boards')] if os.path.exists(zz)]
     
     
     get_parts=lambda x, prfx: dict((f[len(x)+1:-4], GerberFile.from_file(os.path.join(prfx, f))) for f in os.listdir(prfx) if f[-3]=='g')
@@ -18,7 +18,8 @@ def demo(show_cmds=True):
         qq=get_parts(nn,pp)
     
         for k,v in qq.items():
-            print(f"  {k}: {len(v.parts)} parts")
+            if show_summary:
+                print(f"  {k}: {len(v.parts)} parts")
             if show_cmds:
                 for x in v.parts:
                     if x.command:
@@ -26,6 +27,22 @@ def demo(show_cmds=True):
                     
         all_parts[nn]=qq
     return all_parts
+
+def dimensions(parts):
+    
+    max_len = max(len(k) for k,v in parts.items())
+    dims = {}
+    print(f"{' '*max_len} |   left |    top |  width | height")    
+    for k,v in sorted(parts.items()):
+        a,b,c,d = v['Edge_Cuts'].find_bounds()
+        left=a/1_000_000
+        top=-d/1_000_000
+        width=(c-a)/1_000_000
+        height=(d-b)/1_000_000
+        dims[k] = [left,top,width,height]
+        print(f"{k+' '*(max_len-len(k))} | {left:6.1f} | {top:6.1f} | {width:6.1f} | {height:6.1f}")
+    return dims
+    
 
     
 def main():
@@ -61,4 +78,8 @@ def main():
             
                     
     else:
-        return demo(False)
+        parts = demo()
+        dims = dimensions(parts)
+        return parts, dims
+        
+
