@@ -6,6 +6,7 @@ from . import fileformat
 from .parsecommand import read_command
 
 from .utils import next_name, Bounds
+from .drillformat import DrillFile, merge_drillfiles
 
 class GraphicalItem:
     def __init__(self, state=None):
@@ -121,7 +122,8 @@ class GerberFile:
                     raise Exception("read_command failed? ", part_str, command, str(command))
             
             parts.append(part)
-                
+        
+        
         return GerberFile(filename, input_str, parts)
     
     def __init__(self, filename, input_str, parts):
@@ -129,10 +131,18 @@ class GerberFile:
         self.input_str=input_str
         self.parts=parts
         
-        self.analyze_parts()
+        
         
         self.num_merged=0
+        
+        self.aperture_macros={}
+        self.apertures={}
+        self.graphical_items=[]
+        self.analyze_parts()
+        
     
+    def __repr__(self):
+        return f"GerberFile[{self.filename} {len(self.parts)} parts, {len(self.aperture_macros)} macros, {len(self.apertures)} apertures, {len(self.graphical_items)} items]"
     
     def base_parts(self):
         
@@ -166,12 +176,11 @@ class GerberFile:
         
         curr_aperture_attrs={}
         
-        self.aperture_macros={}
-        self.apertures={}
+        
         
         self.comments=[]
         
-        self.graphical_items=[]
+        
         
         curr_graphical_item = None
         
@@ -203,8 +212,9 @@ class GerberFile:
                     elif p.command.command=='G03':
                         plotting_mode='a' #anticlockwise / counterclockwise
                     elif p.command.command=='G75':
-                        if not plotting_mode in ('c', 'a'):
-                            print('PlotStateCommand[G75] when not in clockwise / counterclockwise arc mode?')
+                        pass
+                        #if not plotting_mode in ('c', 'a'):
+                            #print('PlotStateCommand[G75] when not in clockwise / counterclockwise arc mode?')
                 
                 elif isinstance(p.command, commands.ApertureAttributes):
                     curr_aperture_attrs[p.command.name]=p.command.values
@@ -444,11 +454,13 @@ class GerberFile:
                         if p=='l':
                             result.add(commands.PlotStateCommand('G01'))
                         elif p=='c':
+                            result.add(commands.PlotStateCommand('G75'))
                             result.add(commands.PlotStateCommand('G02'))
-                            result.add(commands.PlotStateCommand('G75'))
+                            
                         elif p=='a':
-                            result.add(commands.PlotStateCommand('G03'))
                             result.add(commands.PlotStateCommand('G75'))
+                            result.add(commands.PlotStateCommand('G03'))
+                            
                         curr_plot_mode=p
                     result.add(copy.deepcopy(q))
                 
@@ -505,7 +517,35 @@ def translate_gerber(gerberfile, x_offset, y_offset):
     
     
     return new_parts
-                
+
+def make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, edge_cut_parts):
+          
+    base_gerber.apertures['D10'] = Aperture({'.AperFunction':'Profile'}, "C", [('f',0.05)])
+    
+    bounds=Bounds()
+    if isinstance(edge_cuts_rectangle, list):
+        bounds.expand(edge_cuts_rectangle[0]*1_000_000,-edge_cuts_rectangle[1]*1_000_000)
+        bounds.expand(edge_cuts_rectangle[2]*1_000_000,-edge_cuts_rectangle[3]*1_000_000)
+        
+    else:
+        for other_gerber, x_offset, y_offset in edge_cut_parts:
+            
+            other_bounds = other_gerber.find_bounds().translate(x_offset*1_000_000, -y_offset*1_000_000)
+            bounds.expand_bounds(other_bounds)
+    
+    min_x,min_y,max_x,max_y=bounds
+    gi=GraphicalItem()
+    gi.state.aperture='D10'
+    gi.add('l', commands.GraphicalOperation('D02', min_x, min_y, None, None))
+    gi.add('l', commands.GraphicalOperation('D01', min_x, max_y, None, None))
+    gi.add('l', commands.GraphicalOperation('D01', max_x, max_y, None, None))
+    gi.add('l', commands.GraphicalOperation('D01', max_x, min_y, None, None))
+    gi.add('l', commands.GraphicalOperation('D01', min_x, min_y, None, None))
+    base_gerber.graphical_items.append(gi)
+    
+    
+    
+
 
 def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_lines=[]):
     if not spec:
@@ -531,50 +571,35 @@ def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_l
                 if not k in parts[n]:
                     raise Exception(f"part {n} has not {k} layer")
                 try:
-                    v.check_compatible(parts[n][k])
+                    if isinstance(v, DrillFile):
+                        pass
+                    else:
+                        v.check_compatible(parts[n][k])
                 except Exception as ex:
                     raise Exception(f"part {n} layer {k} not compatible {str(ex)}")
     
     
-      
+    result = {}
     
     for lyr, ly0_gerber in layer0.items():
+        
         output_extension = os.path.splitext(ly0_gerber.filename)[1]
         output_filename = output_prfx + '_' + lyr + output_extension
-        
-        base_gerber = GerberFile(output_filename, None, ly0_gerber.base_parts())
-        
-        if lyr=='Edge_Cuts' and edge_cuts_rectangle:
+        output_str=None
+        if isinstance(ly0_gerber, DrillFile):
+            new_drill = merge_drillfiles(output_prfx, [[parts[a][lyr],b,c] for a,b,c in spec])
+            output_str=new_drill.to_str()
+            result[lyr]=new_drill
+        else:
+            base_gerber = GerberFile(output_filename, None, ly0_gerber.base_parts())
             
-            base_gerber.apertures['D10'] = Aperture({'.AperFunction':'Profile'}, "C", [('f',0.05)])
+            if lyr=='Edge_Cuts' and edge_cuts_rectangle:
+                make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, [[parts[a][lyr],b,c] for a,b,c in spec])
             
-            bounds=Bounds()
-            if isinstance(edge_cuts_rectangle, list):
-                bounds.expand(edge_cuts_rectange[0]*1_000_000,-edge_cuts_rectange[1]*1_000_000)
-                bounds.expand(edge_cuts_rectange[2]*1_000_000,-edge_cuts_rectange[3]*1_000_000)
-                
             else:
                 for other_gerber_name, x_offset, y_offset in spec:
                     other_gerber = parts[other_gerber_name][lyr]
-                    other_bounds = other_gerber.find_bounds().translate(x_offset*1_000_000, -y_offset*1_000_000)
-                    bounds.expand_bounds(other_bounds)
-            
-            min_x,min_y,max_x,max_y=bounds
-            gi=GraphicalItem()
-            gi.state.aperture='D10'
-            gi.add('l', commands.GraphicalOperation('D02', min_x, min_y, None, None))
-            gi.add('l', commands.GraphicalOperation('D01', min_x, max_y, None, None))
-            gi.add('l', commands.GraphicalOperation('D01', max_x, max_y, None, None))
-            gi.add('l', commands.GraphicalOperation('D01', max_x, min_y, None, None))
-            gi.add('l', commands.GraphicalOperation('D01', min_x, min_y, None, None))
-            base_gerber.graphical_items.append(gi)
-                                
-            
-        else:
-        
-            for other_gerber_name, x_offset, y_offset in spec:
-                other_gerber = parts[other_gerber_name][lyr]
-                base_gerber.merge_gerberfile(other_gerber, x_offset*1_000_000, -y_offset*1_000_000)
+                    base_gerber.merge_gerberfile(other_gerber, x_offset*1_000_000, -y_offset*1_000_000)
             
             
             if silkscreen_lines and lyr in ('F_Silkscreen', 'B_Silkscreen'):
@@ -594,12 +619,15 @@ def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_l
                     base_gerber.graphical_items.append(gi)
             
             
-        output = base_gerber.make_gerber_from_parts()
-        output_str = output.to_str()
-        
+            output = base_gerber.make_gerber_from_parts()
+            output_str = output.to_str()
+            
+            result[lyr]=base_gerber
+            
         with open(output_filename, 'w') as output_file:
             output_file.write(output_str)
     
+    return result
     
             
         

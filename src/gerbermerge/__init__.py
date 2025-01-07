@@ -1,5 +1,23 @@
-from .gerberparse import GerberFile
+from .gerberparse import GerberFile, combine_all
+from .drillformat import DrillFile
 import sys, os
+
+
+def get_parts(x, prfx):
+    result={}
+    for f in os.listdir(prfx):
+        fn=os.path.join(prfx, f)
+        if f[-3]=='g':
+            name = f[len(x)+1:-4]
+            gerber=GerberFile.from_file(fn)
+            result[name]=gerber
+        elif f[-3:]=='drl':
+            name = f[len(x)+1:-4]
+            drills=DrillFile.from_file(fn)
+            if drills.units != 'METRIC':
+                raise Exception(f"expected drill file {fn} to be metric units")
+            result[name]=drills
+    return result
 
 def demo(show_summary=False, show_cmds=False):
     
@@ -9,7 +27,7 @@ def demo(show_summary=False, show_cmds=False):
     prfxs = [(yy,zz) for yy,zz in [(x,'misc/small_boards/'+x+'/gerbers') for x in os.listdir('misc/small_boards')] if os.path.exists(zz)]
     
     
-    get_parts=lambda x, prfx: dict((f[len(x)+1:-4], GerberFile.from_file(os.path.join(prfx, f))) for f in os.listdir(prfx) if f[-3]=='g')
+    #get_parts=lambda x, prfx: dict((f[len(x)+1:-4], GerberFile.from_file(os.path.join(prfx, f))) for f in os.listdir(prfx) if f[-3]=='g')
 
     all_parts={}
 
@@ -80,6 +98,13 @@ def main():
     else:
         parts = demo()
         dims = dimensions(parts)
-        return parts, dims
+        
+        AA = [['33063_boost', 2.5, 0], ['33063_invert', 50.5, 0], ['r1283_power', 0, 21], ['ap3372s_usbpd', 50.5, 21]]
+
+        silks = [[1,100,50,100,95],[1,50,70,150,70]]
+        combined=combine_all(parts, AA, 'combined_board/combined_board', [50,50,150,95], silks)
+        
+        if not __name__ == "__main__":
+            return parts, dims,combined
         
 
