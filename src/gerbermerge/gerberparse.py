@@ -8,6 +8,7 @@ from .parsecommand import read_command
 from .utils import next_name, Bounds
 from .drillformat import DrillFile, merge_drillfiles
 
+
 class GraphicalItem:
     def __init__(self, state=None):
         self.state = State() if state is None else copy.deepcopy(state) 
@@ -567,38 +568,38 @@ def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_l
         
         for n,_,_ in spec[1:]:
             
-            for k,v in layer0.items():
-                if not k in parts[n]:
+            for k,v in layer0.parts.items():
+                if not k in parts[n].parts:
                     raise Exception(f"part {n} has not {k} layer")
                 try:
                     if isinstance(v, DrillFile):
                         pass
                     else:
-                        v.check_compatible(parts[n][k])
+                        v.check_compatible(parts[n].parts[k])
                 except Exception as ex:
                     raise Exception(f"part {n} layer {k} not compatible {str(ex)}")
     
     
     result = {}
     
-    for lyr, ly0_gerber in layer0.items():
+    for lyr, ly0_gerber in layer0.parts.items():
         
         output_extension = os.path.splitext(ly0_gerber.filename)[1]
-        output_filename = output_prfx + '_' + lyr + output_extension
+        output_filename = output_prfx + '-' + lyr + output_extension
         output_str=None
         if isinstance(ly0_gerber, DrillFile):
-            new_drill = merge_drillfiles(output_prfx, [[parts[a][lyr],b,c] for a,b,c in spec])
+            new_drill = merge_drillfiles(output_prfx, [[parts[a].parts[lyr],b,c] for a,b,c in spec])
             output_str=new_drill.to_str()
             result[lyr]=new_drill
         else:
             base_gerber = GerberFile(output_filename, None, ly0_gerber.base_parts())
             
             if lyr=='Edge_Cuts' and edge_cuts_rectangle:
-                make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, [[parts[a][lyr],b,c] for a,b,c in spec])
+                make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, [[parts[a].parts[lyr],b,c] for a,b,c in spec])
             
             else:
                 for other_gerber_name, x_offset, y_offset in spec:
-                    other_gerber = parts[other_gerber_name][lyr]
+                    other_gerber = parts[other_gerber_name].parts[lyr]
                     base_gerber.merge_gerberfile(other_gerber, x_offset*1_000_000, -y_offset*1_000_000)
             
             

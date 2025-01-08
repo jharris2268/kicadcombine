@@ -60,6 +60,8 @@ class Bounds:
         return new
     
     def expand_bounds(self, other):
+        if other.is_empty():
+            return
         if self.is_empty():
             self.min_x = other.min_x
             self.min_y = other.min_y
@@ -79,7 +81,18 @@ class Bounds:
         if other.min_x > self.max_x: return False
         if other.min_y > self.max_y: return False
         return True
-        
+    
+    @property
+    def width(self):
+        if self.is_empty():
+            return False
+        return self.max_x-self.min_x
+    
+    @property
+    def height(self):
+        if self.is_empty():
+            return False
+        return self.max_y-self.min_y
     
     def __len__(self):
         return 4
