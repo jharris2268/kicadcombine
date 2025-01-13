@@ -1,6 +1,6 @@
 from .commands import *
 import re
-from .utils import get_num
+from kicadcombine.utils import get_num
 
 
 FS_re = re.compile("^FSLAX([1-6])([6])Y([1-6])([6])\*$")

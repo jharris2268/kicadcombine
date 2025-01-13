@@ -1,5 +1,5 @@
-from .utils import Bounds
-from .gerberparse import GerberFile
+from kicadcombine.utils import Bounds
+from . import GerberFile
 from .drillformat import DrillFile
 
 import os.path

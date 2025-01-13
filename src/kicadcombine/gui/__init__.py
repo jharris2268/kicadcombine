@@ -2,7 +2,7 @@ import wx
 import wx.dataview as dv
 
 from .frame import GerberMergeFrameBase
-from gerbermerge.sourcedesign import check_for_gerber_files, SourceDesign
+from kicadcombine.gerber.sourcedesign import check_for_gerber_files, SourceDesign
 
 import os.path
 
@@ -117,6 +117,7 @@ class GerberMergeFrame(GerberMergeFrameBase):
         
             wx.MessageBox(f"did not find any gerber files in {pathname}")
             return
+        
         
         sd = SourceDesign.from_path(pathname)
         self.source_designs[sd.name] = sd

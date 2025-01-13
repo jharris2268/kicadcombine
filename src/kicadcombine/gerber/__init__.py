@@ -5,7 +5,7 @@ from . import commands
 from . import fileformat
 from .parsecommand import read_command
 
-from .utils import next_name, Bounds
+from kicadcombine.utils import next_name, Bounds
 from .drillformat import DrillFile, merge_drillfiles
 
 
@@ -548,26 +548,33 @@ def make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, edge_cut_parts):
     
 
 
-def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_lines=[]):
+def combine_all(parts, spec, output_prfx, width=None, height=None, silkscreen_lines=[]):
     if not spec:
         raise Exception("no spec?")
-        
-    for n,_,_ in spec:
+    if not (width is None)==(height is None):
+        raise Exception("specify both width and height, or neither")
+    for n,x,y,angle in spec:
         if not n in parts:
             raise Exception(f"no {n} in parts [{parts.keys()}]")
+        if angle != 0:
+            raise Exception(f"angle must be zero: [{n}, {x}, {y}, {angle}]")
     
     
     
     #extensions = dict((a,os.path.splitext(b.filename)[1]) for a,b in base.items())        
     #print(extensions)
     
-    layer0_name, _, _ = spec[0]
+    layer0_name, x0,y0,_ = spec[0]
     layer0 = parts[layer0_name]
+    
+    boxes=[[x0,y0,x0+layer0.width,y0+layer0.height]]
     
     if len(spec)>1:
         
-        for n,_,_ in spec[1:]:
-            
+        for n,x,y,angle in spec[1:]:
+            if angle != 0:
+                raise Exception("angle must be 0")
+                
             for k,v in layer0.parts.items():
                 if not k in parts[n].parts:
                     raise Exception(f"part {n} has not {k} layer")
@@ -578,8 +585,20 @@ def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_l
                         v.check_compatible(parts[n].parts[k])
                 except Exception as ex:
                     raise Exception(f"part {n} layer {k} not compatible {str(ex)}")
+        
+            design = parts[n]
+            if x<0 or y<0:
+                raise Exception(f"out of bounds: [{n}, {x}, {y}, {angle} (width={design.width}, height={design.height})]")
+            if width is not None:
+                if x+design.width>width or y+design.height > height:
+                    raise Exception(f"out of bounds: [{n}, {x}, {y}, {angle} (width={design.width}, height={design.height})]")
+                    
+            boxes.append([x, y, x+design.width, y+design.height])
     
-    
+    print(boxes)
+    if width is None:
+        width, height = max(c for a,b,c,d in boxes), max(d for a,b,c,d in boxes)
+            
     result = {}
     
     for lyr, ly0_gerber in layer0.parts.items():
@@ -588,25 +607,33 @@ def combine_all(parts, spec, output_prfx, edge_cuts_rectangle=None, silkscreen_l
         output_filename = output_prfx + '-' + lyr + output_extension
         output_str=None
         if isinstance(ly0_gerber, DrillFile):
-            new_drill = merge_drillfiles(output_prfx, [[parts[a].parts[lyr],b,c] for a,b,c in spec])
+            
+            new_drill = merge_drillfiles(output_prfx, [[parts[a].parts[lyr],b-parts[a].left,c-parts[a].top] for a,b,c,_ in spec])
             output_str=new_drill.to_str()
             result[lyr]=new_drill
         else:
             base_gerber = GerberFile(output_filename, None, ly0_gerber.base_parts())
             
-            if lyr=='Edge_Cuts' and edge_cuts_rectangle:
-                make_edge_cuts_rect(base_gerber, edge_cuts_rectangle, [[parts[a].parts[lyr],b,c] for a,b,c in spec])
+            if lyr=='Edge_Cuts' and width is not None and height is not None:
+                make_edge_cuts_rect(base_gerber, [0,0,width,height], [[parts[a].parts[lyr],b,c] for a,b,c,_ in spec])
             
             else:
-                for other_gerber_name, x_offset, y_offset in spec:
-                    other_gerber = parts[other_gerber_name].parts[lyr]
-                    base_gerber.merge_gerberfile(other_gerber, x_offset*1_000_000, -y_offset*1_000_000)
+                for other_gerber_name, x_offset, y_offset, angle in spec:
+                    other_design = parts[other_gerber_name]
+                    other_gerber = other_design.parts[lyr]
+                    x_off = (x_offset - other_design.left)*1_000_000
+                    y_off = (y_offset - other_design.top)*1_000_000
+                    base_gerber.merge_gerberfile(other_gerber, x_off, -y_off)
             
             
             if silkscreen_lines and lyr in ('F_Silkscreen', 'B_Silkscreen'):
                 apertures={}
                 
                 for w, start_x, start_y, end_x, end_y in silkscreen_lines:
+                    if start_x is None: start_x=0
+                    if start_y is None: start_y=0
+                    if end_x is None: end_x=width
+                    if end_y is None: end_y=height
                     
                     if not w in apertures:
                         aper = Aperture({}, 'C', [('f', w)])

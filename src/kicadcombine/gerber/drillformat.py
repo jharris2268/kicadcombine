@@ -1,5 +1,5 @@
 import re
-from .utils import next_name
+from kicadcombine.utils import next_name
 
 class Hole:
     def __init__(self, lineno,drill, x, y):

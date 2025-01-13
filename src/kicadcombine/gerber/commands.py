@@ -1,4 +1,4 @@
-from .utils import num_str, num_str_null, num_repr
+from kicadcombine.utils import num_str, num_str_null, num_repr
 
 
 
