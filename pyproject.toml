@@ -26,7 +26,7 @@ build-backend = "setuptools.build_meta" # If not defined, then legacy behavior c
 # There are some restrictions on what makes a valid project name
 # specification here:
 # https://packaging.python.org/specifications/core-metadata/#name
-name = "gerbermerge" # REQUIRED, is the only field that cannot be marked as dynamic.
+name = "kicadcombine" # REQUIRED, is the only field that cannot be marked as dynamic.
 
 # Versions should comply with PEP 440:
 # https://www.python.org/dev/peps/pep-0440/
@@ -142,14 +142,14 @@ test = ["coverage"]
 # maintainers, and where to support the project financially. The key is
 # what's used to render the link text on PyPI.
 [project.urls]
-"Homepage" = "https://github.com/jharris2268/gerbermerge"
-"Bug Reports" = "https://github.com/jharris2268/gerbermerge/issues"
-"Source" = "https://github.com/jharris2268/gerbermerge"
+"Homepage" = "https://github.com/jharris2268/kicadcombine"
+"Bug Reports" = "https://github.com/jharris2268/kicadcombine/issues"
+"Source" = "https://github.com/jharris2268/kicadcombine"
 
 # The following would provide a command line executable called `sample`
 # which executes the function `main` from this package when invoked.
 [project.scripts]
-gerbermerge = "gerbermerge:main"
+kicadcombine = "kicadcombine:main"
 
 
 # This is configuration specific to the `setuptools` build backend.
