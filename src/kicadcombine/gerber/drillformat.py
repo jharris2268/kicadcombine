@@ -152,7 +152,7 @@ class DrillFile:
     def merge(self, other, x_offset, y_offset):
         
         if other.units != self.units:
-            raise Exception("different units")
+            raise Exception(f"{self} {self.units} || {other} {other.units} different units")
             
         drill_renames={}
         for _, ds in other.drill_spec.items():

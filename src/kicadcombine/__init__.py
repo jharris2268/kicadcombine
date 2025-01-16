@@ -26,19 +26,22 @@ def get_parts(x, prfx):
     return result
 
 
+def is_gerber_file(fn):
+    a,b=os.path.splitext(fn)
+    if len(b)>1:
+        return b=='.drl' or b[1]=='f' or b[1]=='g'
+    return False
+
 def demo(show_summary=False, show_cmds=False):
     result = {}
-    for m in ('misc/small_boards',
-            'misc/other_small_boards',
-            'pi_pico/pico_siggen/hardware/panels/gerbers/'
-            '6502-boards/rom-adaptor-smd/gerbers/'):
-    
-        for a,b,c in os.path.tree(m):
+    for m in EXAMPLE_LOCATIONS:
+        
+        for a,b,c in os.walk(m):
             if any(is_gerber_file(f) for f in c):
                 
                 sd = SourceDesign.from_path(a)
                 if show_summary:
-                    print(f"  {k}: {len(sd.parts)} parts")
+                    print(f"  {sd.name}: {len(sd.parts)} parts")
                 if show_cmds:
                     for x in sd.parts:
                         if x.command:
@@ -83,22 +86,29 @@ DESIGN = [
     #board,             x-pos,  y-pos,  angle
     ['33063_boost',     2,      0,      0],
     ['33063_invert',    50,     0,      0],
-    ['r1283_power',     4,      21,     0],
-    ['ap3372s_usbpd',   50,     21,     0],
+    ['ap3372s_usbpd',   4,      21,     0],
+    ['r1283_power',     50,     21,     0],
     ['panels',          6,      45,     0],
 ]
 
 LINES = [
     #width, sx,     sy,     ex,     ey
     [1,     None,   20.5,   None,   20.5],
-    [1,     None,   None,   49.5,   44.5],
-    [10,    49.5,   0       49.5,   44.5],
+    [1,     None,   44.5,   None,   44.5],
+    [1,     49.5,   0,      49.5,   44.5],
 ]
-    
+
+EXAMPLE_LOCATIONS = [
+    '/home/james/elec/misc/small_boards',
+    '/home/james/elec/misc/other_small_boards',
+    '/home/james/elec/pi_pico/pico_siggen/hardware/panels/panels.kicad_pcb',
+    '/home/james/elec/6502-boards/rom-adaptor-smd/rom-adaptor-smd.kicad_pcb'
+]
+
 def main():
     #print("main")
     if 'gerberdemo' in sys.argv:
-        parts = demo()
+        parts = demo(True)
         dimensions(parts)
         
         combined_parts=combine_all(parts, DESIGN, 'combined_board/from_gerber/combined_board', None, None, LINES)
@@ -111,12 +121,7 @@ def main():
             return parts, combined
     
     elif 'kicaddemo' in sys.argv:
-        source_files = get_source_files([
-            'misc/small_boards',
-            'misc/other_small_boards',
-            'pi_pico/pico_siggen/hardware/panels/panels.kicad_pcb'
-            '6502-boards/rom-adaptor-smd/rom-adaptor-smd.kicad_pcb'        
-        ])
+        source_files = get_source_files(EXAMPLE_LOCATIONS)
         
         
         prepare_panel(source_files, DESIGN, LINES, 'combined_board/combined_board.kicad_pcb')

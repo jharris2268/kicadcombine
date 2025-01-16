@@ -8,7 +8,7 @@ import shapely.ops as sop
 from math import sin, cos, pi
 import numpy as np
 
-
+from .boardoutline import find_board_outline_polygon, iter_pairs
 
 class Bounds:
     def __init__(self, bx=None):
@@ -112,176 +112,7 @@ class Bounds:
         return f"Bounds[{self.min_x} {self.min_y} {self.max_x} {self.max_y}]"
             
         
-    
-class Line:
-    
-    @staticmethod
-    def lines_from_rect(rect):
-        a,b,c,d = rect.GetStartX(),rect.GetStartY(),rect.GetEndX(),rect.GetEndY()
-        return [Line(seg=None,start=[a,b],end=[c,b]),
-                Line(seg=None,start=[c,b],end=[c,d]),
-                Line(seg=None,start=[c,d],end=[a,d]),
-                Line(seg=None,start=[a,d],end=[a,b])]
-    
-    def __init__(self, seg, start=None,end=None):
-        if start is None and not seg is None:
-            self.start_x, self.start_y = seg.GetStartX()/1_000_000, seg.GetStartY()/1_000_000
-            self.end_x, self.end_y = seg.GetEndX()/1_000_000, seg.GetEndY()/1_000_000
-        elif seg is None and not start is None and not start is None:
-            self.start_x, self.start_y = start[0]/1_000_000,start[1]/1_000_000
-            self.end_x, self.end_y = end[0]/1_000_000,end[1]/1_000_000
-        else:
-            raise Exception("specify seg OR start and end")
-    
-    @property
-    def start(self):
-        return (self.start_x, self.start_y)
-    
-    @property
-    def end(self):
-        return (self.end_x, self.end_y)
-    
-    def shape(self, ns=None):
-        return shp.LineString([[self.start_x,self.start_y], [self.end_x, self.end_y]])
 
-class Arc:
-    def __init__(self, seg):
-        self.start_x, self.start_y = seg.GetStartX()/1_000_000, seg.GetStartY()/1_000_000
-        self.end_x, self.end_y = seg.GetEndX()/1_000_000, seg.GetEndY()/1_000_000
-        
-        self.start_angle = seg.GetArcAngleStart().AsDegrees()
-        self.arc_angle = seg.GetArcAngle().AsDegrees()
-        self.radius = seg.GetRadius()/1_000_000
-        if abs(self.interp_x(self.arc_angle) - self.end_x)>0.001:
-            print(f"?? interp_x({self.arc_angle}) {self.interp_x(self.arc_angle)}!={self.end_x}")
-        if abs(self.interp_y(self.arc_angle)-self.end_y)>0.001:
-            print(f"?? interp_y({self.arc_angle}) {self.interp_y(self.arc_angle)}!={self.end_y}")
-    
-    @property
-    def start(self):
-        return (self.start_x, self.start_y)
-    
-    @property
-    def end(self):
-        return (self.end_x, self.end_y)
-    
-    def interp_x(self, a):
-        return self.start_x + self.radius * (
-            cos( (self.start_angle + a) * pi / 180) - 
-            cos( (self.start_angle) * pi / 180))
-    
-    def interp_y(self, a):
-        return self.start_y + self.radius * (
-            sin( (self.start_angle + a) * pi / 180) - 
-            sin( (self.start_angle) * pi / 180))
-    
-    def shape(self, ns=None):
-        ii = np.linspace(0, self.arc_angle, ns or 15)
-        return shp.LineString([[self.interp_x(i),self.interp_y(i)] for i in ii])
-
-class Rect:
-    def __init__(self, seg):
-        self.left, self.top = seg.GetStartX()/1_000_000, seg.GetStartY()/1_000_000
-        self.right, self.bottom = seg.GetEndX()/1_000_000, seg.GetEndY()/1_000_000
-        
-    
-    @property
-    def start(self):
-        return (self.left, self.top)
-    
-    @property
-    def end(self):
-        return (self.left, self.top)
-    
-    def shape(self, ns=None):
-        return shp.box(self.left, self.top, self.right, self.bottom).boundary
-
-       
-def iter_pairs(itr):
-    prev=None
-    for i in itr:
-        if prev is None:
-            pass
-        else:
-            yield (prev, i)
-        prev=i
-
-
-def find_shape(shapes, a, b):
-    for s in shapes:
-        if (s.start == a) and (s.end == b):
-            return (s, 'f')
-        elif (s.start == b) and (s.end == a):
-            return (s, 'b')
-    
-    return None
-            
-            
-def make_shapes(board,split_rect=True):
-    shapes = []
-    for drawing in board.Drawings():
-        if drawing.GetLayer()==pcbnew.Edge_Cuts and drawing.Type()==5:
-            if drawing.ShowShape() == 'Line':
-                shapes.append(Line(drawing))
-            elif drawing.ShowShape() == 'Arc':
-                shapes.append(Arc(drawing))
-            elif drawing.ShowShape() == 'Rect':
-                if split_rect:
-                    shapes.extend(Line.lines_from_rect(drawing))
-                else:
-                    shapes.append(Rect(drawing))
-            else:
-                print(f"?? {drawing}")
-        
-    return shapes
-
-def find_board_outline_polygon(board, ns=None):
-    
-    shapes=make_shapes(board)
-    polygon = make_polygon(shapes, ns)
-    
-    min_x, min_y, _, _ = polygon.bounds
-    polygon_translated = sop.transform(lambda x,y: [x-min_x, y-min_y], polygon)
-    
-    return polygon_translated, [min_x, min_y]
-
-def make_polygon(shapes, ns=None):
-    polygon = shp.polygonize([s.shape(ns) for s in shapes])
-    
-    if polygon.geom_type=='Polygon':
-        return polygon
-    elif polygon.geom_type=='GeometryCollection':
-        if len(polygon.geoms)==0:
-            raise Exception("no outline?")
-        
-        return max(polygon.geoms, key=lambda x: x.area)
-        
-        
-        
-    else:
-        raise Exception("??")
-    
-    return None
-
-
-def find_board_outline_parts(board):
-    
-    shapes=make_shapes(board)
-    polygon = make_polygon(shapes, 2)
-    
-    
-    exterior_rev = [find_shape(shapes, a,b) for a,b in iter_pairs(polygon.exterior.coords)]
-    interiors_rev = [[find_shape(shapes, a, b) for a,b in iter_pairs(ii.coords)] for ii in polygon.interiors]
-    
-    exterior = [(a,'b' if b=='f' else 'f') for a,b in reversed(exterior_rev)]
-    
-    interiors = [[(a,'b' if b=='f' else 'f') for a,b in reversed(ii)] for ii in interiors_rev]
-    
-    
-    return polygon.bounds, exterior, interiors
-    
-    
-        
     
 
 class SourceFile:
@@ -292,6 +123,23 @@ class SourceFile:
         
         self.board_outline, self.offset = find_board_outline_polygon(self.board)
         self.bounds=Bounds(self.board_outline.bounds)
+    
+    
+    @property
+    def width(self):
+        return self.bounds.width
+    
+    @property
+    def height(self):
+        return self.bounds.height
+        
+    @property
+    def has_f_paste(self):
+        return True
+    
+    @property
+    def num_copper_layers(self):
+        return self.board.GetCopperLayerCount()
     
     def get_board_outline(self, x_pos, y_pos, angle):
         poly = self.board_outline
@@ -377,8 +225,26 @@ def iter_polygons(geom):
                 yield p
     else:
         raise Exception(f"unexpected geometry f{geom}")
+
+
+def find_board_outline_tight(source_files, pattern, lines):
     
+    polys = []
+    holes = []
     
+    for srcn, x_pos, y_pos,angle in pattern:
+        src = source_files[srcn]
+        poly = src.get_board_outline(x_pos, y_pos, angle)
+        polys.append(no_holes(poly))
+        holes.extend(shp.Polygon(intr) for intr in poly.interiors)
+    
+    board_poly = fill_gaps(polys)
+    
+    if holes:
+        board_poly = board_poly.difference(shp.unary_union(holes))
+    
+    return board_poly
+
 
 def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, return_all=False):
     boxes = [source_files[src].bounds.normalize().rotate(angle).translate(x_pos,y_pos) for src,x_pos,y_pos,angle in pattern]
@@ -391,7 +257,7 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
                 print(f"ERROR: [{i} {pattern[i][0]}] {bx} overlaps [{j} {pattern[j][0]} {bx2}")
         
     pp = pnl.Panel(output_file)
-    polys = []
+    
     for srcn, x_pos, y_pos,angle in pattern:
         print(f"adding {srcn} @ {x_pos} {y_pos}")   
         src = source_files[srcn]
@@ -406,31 +272,30 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
             inheritDrc=False,
             bakeText=bake_text)
         
-        
-        poly = src.get_board_outline(x_pos, y_pos, angle)
-        polys.append(no_holes(poly))
+    board_poly = find_board_outline_tight(source_files, pattern, lines)
+#        poly = src.get_board_outline(x_pos, y_pos, angle)
+#        polys.append(no_holes(poly))
+#        holes.extend(shp.Polygon(intr) for intr in poly.interiors)
+    
+#    board_poly = fill_gaps(polys)
+    
+#    if holes:
+#        board_poly = board_poly.difference(shp.unary_union(holes))
+    
+    #board_poly_int = shp.Polygon([[(x+20)*1_000_000, (y+20)*1_000_000] for x,y in board_poly.exterior.coords])
+    board_poly_int = sop.transform(lambda x,y: ((x+20)*1_000_000, (y+20)*1_000_000), board_poly)
     
     
-    board_poly = fill_gaps(polys)
-    
-    if False:
-    
-        line_polys = [shp.LineString([[a,b],[c,d]]).buffer(0.5, cap_style='flat') for a,b,c,d in lines]
-        
-        initial_board_poly = shp.unary_union(polys+line_polys)
-        
-        board_poly = None
-        if initial_board_poly.geom_type == 'Polygon':
-            board_poly = no_holes(initial_board_poly)
-        else:
-            board_poly = fill_gaps(list(iter_polygons(initial_board_poly)))
-    
-    board_poly_int = shp.Polygon([[(x+20)*1_000_000, (y+20)*1_000_000] for x,y in board_poly.exterior.coords])
     pp.appendSubstrate(board_poly_int)
     
     #print('handle lines?')
-    for a,b,c,d in lines:
-        add_line(pp.board, x0=a,y0=b,x1=c,y1=d, layers=[pcbnew.F_SilkS, pcbnew.B_SilkS], width=1)
+    
+    for w,sx,sy,ex,ey in lines:
+        if sx is None: sx=board_poly.bounds[0]
+        if sy is None: sy=board_poly.bounds[1]
+        if ex is None: ex=board_poly.bounds[2]
+        if ey is None: ey=board_poly.bounds[3]
+        add_line(pp.board, x0=sx,y0=sy,x1=ex,y1=ey, layers=[pcbnew.F_SilkS, pcbnew.B_SilkS], width=w)
     
     pp.save()
     if return_all:
@@ -459,6 +324,9 @@ def iter_points(line):
     for x,y in line.coords:
         yield shp.Point(x,y)
 
+def is_straight(a, b):
+    return abs(a.x-b.x)<0.001 or abs(a.y-b.y)<0.001
+        
 def find_closest(line, point):
     if line.geom_type == 'MultiLineString':
         pds = [find_closest(l, point) for l in line.geoms]
@@ -489,9 +357,10 @@ def join_poly(left, right, max_gap=5):
         q0,d0 = find_closest(boundary_left, p0)
         q1,d1 = find_closest(boundary_left, p1)
         
-        if d0 < max_gap and d1 < max_gap:
-            #add polygon from four points
-            result.append(shp.Polygon([p0,p1,q1,q0,p0]))
+        if is_straight(p0,q1) and is_straight(p1,q1):
+            if d0 < max_gap and d1 < max_gap:
+                #add polygon from four points
+                result.append(shp.Polygon([p0,p1,q1,q0,p0]))
     return result
     
 
