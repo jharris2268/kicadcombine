@@ -1,2 +1,2 @@
-# gerbermerge
-Python tool for merging gerber files
+# kicadcombine
+Gui / wrapper for kikit kicad panelizer
