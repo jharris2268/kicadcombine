@@ -28,6 +28,9 @@ class KicadCombineFrameBase ( wx.Frame ):
         self.m_statusBar1 = self.CreateStatusBar( 1, wx.STB_SIZEGRIP, wx.ID_ANY )
         self.m_menubar1 = wx.MenuBar( 0 )
         self.m_menu1 = wx.Menu()
+        self.new_menuitem = wx.MenuItem( self.m_menu1, wx.ID_ANY, _(u"New"), wx.EmptyString, wx.ITEM_NORMAL )
+        self.m_menu1.Append( self.new_menuitem )
+
         self.open_menuitem = wx.MenuItem( self.m_menu1, wx.ID_ANY, _(u"Open"), wx.EmptyString, wx.ITEM_NORMAL )
         self.m_menu1.Append( self.open_menuitem )
 
@@ -60,11 +63,16 @@ class KicadCombineFrameBase ( wx.Frame ):
 
         gbSizer1.Add( self.m_staticText8, wx.GBPosition( 2, 0 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
+        bSizer4 = wx.BoxSizer( wx.HORIZONTAL )
+
         self.add_sourcedesign_row_one = wx.Button( self, wx.ID_ANY, _(u"Single"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_sourcedesign_row_one, wx.GBPosition( 2, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        bSizer4.Add( self.add_sourcedesign_row_one, 0, wx.ALL, 5 )
 
         self.add_sourcedesign_row_many = wx.Button( self, wx.ID_ANY, _(u"All"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_sourcedesign_row_many, wx.GBPosition( 2, 2 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        bSizer4.Add( self.add_sourcedesign_row_many, 0, wx.ALL, 5 )
+
+
+        gbSizer1.Add( bSizer4, wx.GBPosition( 2, 1 ), wx.GBSpan( 1, 2 ), wx.EXPAND, 5 )
 
         self.m_staticText9 = wx.StaticText( self, wx.ID_ANY, _(u"Add To Placements"), wx.DefaultPosition, wx.DefaultSize, 0 )
         self.m_staticText9.Wrap( -1 )
@@ -90,29 +98,34 @@ class KicadCombineFrameBase ( wx.Frame ):
         bSizer3.Add( self.add_to_placements_below, 0, wx.ALL, 5 )
 
 
-        gbSizer1.Add( bSizer3, wx.GBPosition( 3, 1 ), wx.GBSpan( 1, 4 ), wx.EXPAND, 5 )
+        gbSizer1.Add( bSizer3, wx.GBPosition( 3, 1 ), wx.GBSpan( 1, 2 ), wx.EXPAND, 5 )
 
         self.m_staticline6 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
-        gbSizer1.Add( self.m_staticline6, wx.GBPosition( 3, 5 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+        gbSizer1.Add( self.m_staticline6, wx.GBPosition( 3, 3 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+
+        bSizer5 = wx.BoxSizer( wx.HORIZONTAL )
 
         self.add_to_placements_new_row = wx.Button( self, wx.ID_ANY, _(u"Add New Row"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_to_placements_new_row, wx.GBPosition( 3, 6 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        bSizer5.Add( self.add_to_placements_new_row, 0, wx.ALL, 5 )
 
         self.add_to_placements_new_column = wx.Button( self, wx.ID_ANY, _(u"Add New Column"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_to_placements_new_column, wx.GBPosition( 3, 7 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        bSizer5.Add( self.add_to_placements_new_column, 0, wx.ALL, 5 )
+
+
+        gbSizer1.Add( bSizer5, wx.GBPosition( 3, 4 ), wx.GBSpan( 1, 2 ), wx.EXPAND, 5 )
 
         self.m_staticline10 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
-        gbSizer1.Add( self.m_staticline10, wx.GBPosition( 3, 8 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+        gbSizer1.Add( self.m_staticline10, wx.GBPosition( 3, 6 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
 
         self.with_lines_checkbox = wx.CheckBox( self, wx.ID_ANY, _(u"With Line"), wx.DefaultPosition, wx.DefaultSize, 0 )
         self.with_lines_checkbox.SetValue(True)
-        gbSizer1.Add( self.with_lines_checkbox, wx.GBPosition( 3, 9 ), wx.GBSpan( 1, 1 ), wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+        gbSizer1.Add( self.with_lines_checkbox, wx.GBPosition( 3, 7 ), wx.GBSpan( 1, 1 ), wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
 
         self.m_staticline7 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
-        gbSizer1.Add( self.m_staticline7, wx.GBPosition( 2, 5 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+        gbSizer1.Add( self.m_staticline7, wx.GBPosition( 2, 3 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
 
         self.delete_source_design = wx.Button( self, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.delete_source_design, wx.GBPosition( 2, 6 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        gbSizer1.Add( self.delete_source_design, wx.GBPosition( 2, 4 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline1 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
         gbSizer1.Add( self.m_staticline1, wx.GBPosition( 4, 0 ), wx.GBSpan( 1, 12 ), wx.EXPAND |wx.ALL, 5 )
@@ -124,8 +137,8 @@ class KicadCombineFrameBase ( wx.Frame ):
 
         bSizer2 = wx.BoxSizer( wx.HORIZONTAL )
 
-        self.board_size_radio_fit = wx.RadioButton( self, wx.ID_ANY, _(u"Fit Box"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP )
-        bSizer2.Add( self.board_size_radio_fit, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
+        self.board_size_radio_box = wx.RadioButton( self, wx.ID_ANY, _(u"Fit Box"), wx.DefaultPosition, wx.DefaultSize, wx.RB_GROUP )
+        bSizer2.Add( self.board_size_radio_box, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
 
         self.board_size_radio_tight = wx.RadioButton( self, wx.ID_ANY, _(u"Fit Tight"), wx.DefaultPosition, wx.DefaultSize, 0 )
         bSizer2.Add( self.board_size_radio_tight, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
@@ -157,16 +170,16 @@ class KicadCombineFrameBase ( wx.Frame ):
         self.board_width_entry = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
         bSizer1.Add( self.board_width_entry, 0, wx.ALL, 5 )
 
+
+        gbSizer1.Add( bSizer1, wx.GBPosition( 5, 4 ), wx.GBSpan( 1, 2 ), wx.EXPAND, 5 )
+
+        self.m_staticline11 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
+        gbSizer1.Add( self.m_staticline11, wx.GBPosition( 5, 6 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+
         self.board_area_label = wx.StaticText( self, wx.ID_ANY, _(u"board area"), wx.DefaultPosition, wx.DefaultSize, 0 )
         self.board_area_label.Wrap( -1 )
 
-        bSizer1.Add( self.board_area_label, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5 )
-
-
-        gbSizer1.Add( bSizer1, wx.GBPosition( 5, 4 ), wx.GBSpan( 1, 4 ), wx.EXPAND, 5 )
-
-        self.m_staticline11 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
-        gbSizer1.Add( self.m_staticline11, wx.GBPosition( 5, 8 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+        gbSizer1.Add( self.board_area_label, wx.GBPosition( 5, 7 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline2 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
         gbSizer1.Add( self.m_staticline2, wx.GBPosition( 6, 0 ), wx.GBSpan( 1, 12 ), wx.EXPAND |wx.ALL, 5 )
@@ -179,8 +192,25 @@ class KicadCombineFrameBase ( wx.Frame ):
         self.placements_view = wx.dataview.DataViewCtrl( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.dataview.DV_MULTIPLE )
         gbSizer1.Add( self.placements_view, wx.GBPosition( 8, 0 ), wx.GBSpan( 1, 12 ), wx.ALL|wx.EXPAND, 5 )
 
+        bSizer6 = wx.BoxSizer( wx.HORIZONTAL )
+
+        self.move_placement_right = wx.Button( self, wx.ID_ANY, _(u"Move Right"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer6.Add( self.move_placement_right, 0, wx.ALL, 5 )
+
+        self.move_placement_down = wx.Button( self, wx.ID_ANY, _(u"Move Down"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer6.Add( self.move_placement_down, 0, wx.ALL, 5 )
+
+        self.swap_placement = wx.Button( self, wx.ID_ANY, _(u"Swap"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        bSizer6.Add( self.swap_placement, 0, wx.ALL, 5 )
+
+
+        gbSizer1.Add( bSizer6, wx.GBPosition( 9, 1 ), wx.GBSpan( 1, 2 ), wx.EXPAND, 5 )
+
+        self.m_staticline111 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
+        gbSizer1.Add( self.m_staticline111, wx.GBPosition( 9, 3 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+
         self.delete_placement = wx.Button( self, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.delete_placement, wx.GBPosition( 9, 2 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        gbSizer1.Add( self.delete_placement, wx.GBPosition( 9, 4 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline3 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
         gbSizer1.Add( self.m_staticline3, wx.GBPosition( 10, 0 ), wx.GBSpan( 1, 12 ), wx.EXPAND |wx.ALL, 5 )
@@ -193,8 +223,14 @@ class KicadCombineFrameBase ( wx.Frame ):
         self.silkscreen_lines_view = wx.dataview.DataViewListCtrl( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.dataview.DV_MULTIPLE|wx.dataview.DV_ROW_LINES )
         gbSizer1.Add( self.silkscreen_lines_view, wx.GBPosition( 12, 0 ), wx.GBSpan( 3, 12 ), wx.ALL|wx.EXPAND, 5 )
 
-        self.add_silkscreenline_row = wx.Button( self, wx.ID_ANY, _(u"Add Row"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_silkscreenline_row, wx.GBPosition( 15, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        self.add_silkscreen_line_row = wx.Button( self, wx.ID_ANY, _(u"Add Row"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        gbSizer1.Add( self.add_silkscreen_line_row, wx.GBPosition( 15, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+
+        self.m_staticline12 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
+        gbSizer1.Add( self.m_staticline12, wx.GBPosition( 15, 3 ), wx.GBSpan( 1, 1 ), wx.EXPAND |wx.ALL, 5 )
+
+        self.delete_silkscreen_line = wx.Button( self, wx.ID_ANY, _(u"Delete"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        gbSizer1.Add( self.delete_silkscreen_line, wx.GBPosition( 15, 4 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline4 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
         gbSizer1.Add( self.m_staticline4, wx.GBPosition( 10, 13 ), wx.GBSpan( 1, 2 ), wx.EXPAND |wx.ALL, 5 )

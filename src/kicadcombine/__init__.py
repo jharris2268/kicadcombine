@@ -2,7 +2,7 @@ from .gerber import GerberFile, combine_all
 from .gerber.drillformat import DrillFile
 from .gerber.sourcedesign import SourceDesign
 
-from .kicad import get_source_files, prepare_panel
+from . import kicad
 
 import wx
 from .gui import run_gui
@@ -121,12 +121,18 @@ def main():
             return parts, combined
     
     elif 'kicaddemo' in sys.argv:
-        source_files, duplicates = get_source_files(EXAMPLE_LOCATIONS)
-        if duplicates:
-            print("have %d duplicate source designs..." % len(duplicates))
-            print("\n".join(str(y) for x,y in duplicates))        
         
-        prepare_panel_check(source_files, DESIGN, LINES, 'combined_board/combined_board.kicad_pcb')
+        panel = kicad.Panel()
+        panel.open_source_designs(EXAMPLE_LOCATIONS)
+        for n,xp,yp,a in DESIGN:
+            panel.add_placement(n, xp, yp, a)
+        for sx,sy,ex,ey,w in LINES:
+            panel.add_silkscreen_line(sx, sy, ex,ey, w)
+        
+        panel.output_filename = 'combined_board/combined_board.kicad_pcb'
+        panel.board_size_type = 'tight'
+        
+        panel.prepare_panel()
         
         
             

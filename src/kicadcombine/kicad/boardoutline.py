@@ -129,15 +129,6 @@ def make_shapes(board,split_rect=True):
         
     return shapes
 
-def find_board_outline_polygon(board, ns=None):
-    
-    shapes=make_shapes(board)
-    polygon = make_polygon(shapes, ns)
-    
-    min_x, min_y, _, _ = polygon.bounds
-    polygon_translated = sop.transform(lambda x,y: [x-min_x, y-min_y], polygon)
-    
-    return polygon_translated, [min_x, min_y]
 
 def make_polygon(shapes, ns=None):
     polygon = shp.polygonize([s.shape(ns) for s in shapes])
@@ -158,21 +149,18 @@ def make_polygon(shapes, ns=None):
     return None
 
 
-def find_board_outline_parts(board):
+def find_board_outline_polygon(board, ns=None):
     
     shapes=make_shapes(board)
-    polygon = make_polygon(shapes, 2)
+    polygon = make_polygon(shapes, ns)
     
+    min_x, min_y, _, _ = polygon.bounds
+    polygon_translated = sop.transform(lambda x,y: [x-min_x, y-min_y], polygon)
     
-    exterior_rev = [find_shape(shapes, a,b) for a,b in iter_pairs(polygon.exterior.coords)]
-    interiors_rev = [[find_shape(shapes, a, b) for a,b in iter_pairs(ii.coords)] for ii in polygon.interiors]
-    
-    exterior = [(a,'b' if b=='f' else 'f') for a,b in reversed(exterior_rev)]
-    
-    interiors = [[(a,'b' if b=='f' else 'f') for a,b in reversed(ii)] for ii in interiors_rev]
-    
-    
-    return polygon.bounds, exterior, interiors
+    return polygon_translated, [min_x, min_y]
+
+
+
     
     
         
