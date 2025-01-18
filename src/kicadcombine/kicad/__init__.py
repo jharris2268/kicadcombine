@@ -9,6 +9,7 @@ from math import sin, cos, pi
 import numpy as np
 
 from .boardoutline import find_board_outline_polygon, iter_pairs
+from kicadcombine.utils import sha256_digest
 
 class Bounds:
     def __init__(self, bx=None):
@@ -112,13 +113,13 @@ class Bounds:
         return f"Bounds[{self.min_x} {self.min_y} {self.max_x} {self.max_y}]"
             
         
-
     
 
 class SourceFile:
     def __init__(self, name, path):
         self.name=name
         self.path=path
+        self.checksum = sha256_digest(path)
         self.board = pcbnew.LoadBoard(path)
         
         self.board_outline, self.offset = find_board_outline_polygon(self.board)
@@ -192,11 +193,15 @@ def get_kicad_pcb(dir):
         
 def get_source_files(dirs):
     result={}
+    duplicates=[]
     for d in dirs:
         for x,y in get_kicad_pcb(d):
-            result[x] = SourceFile(x, y)
+            if x in result:
+                duplicates.append((x,y))
+            else:
+                result[x] = SourceFile(x, y)
             print(result[x])
-    return result
+    return result, duplicates
 
 def make_vec(x, y):
     return pcbnew.VECTOR2I( int(x*1_000_000+0.5), int(y*1_000_000+0.5))
@@ -209,7 +214,7 @@ def add_line(board, x0, y0, x1, y1, layers, width):
         line.SetStart(make_vec(x0+20, y0+20))
         line.SetEnd(make_vec(x1+20, y1+20))
         line.SetLayer(lyr)
-        line.SetWidth(width*1_000_000)
+        line.SetWidth(int(width*1_000_000+0.5))
         board.Add(line)
     
     
@@ -232,7 +237,9 @@ def find_board_outline_tight(source_files, pattern, lines):
     polys = []
     holes = []
     
-    for srcn, x_pos, y_pos,angle in pattern:
+    for pp in pattern:
+        print(pp, len(pp))
+        srcn, x_pos, y_pos,angle = pp
         src = source_files[srcn]
         poly = src.get_board_outline(x_pos, y_pos, angle)
         polys.append(no_holes(poly))
@@ -246,7 +253,7 @@ def find_board_outline_tight(source_files, pattern, lines):
     return board_poly
 
 
-def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, return_all=False):
+def prepare_panel_check(source_files, pattern, lines, output_file, bake_text=False, return_all=False):
     boxes = [source_files[src].bounds.normalize().rotate(angle).translate(x_pos,y_pos) for src,x_pos,y_pos,angle in pattern]
     for i,bx in enumerate(boxes):
         for j,bx2 in enumerate(boxes):
@@ -255,6 +262,16 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
             
             if bx.overlaps(bx2):
                 print(f"ERROR: [{i} {pattern[i][0]}] {bx} overlaps [{j} {pattern[j][0]} {bx2}")
+    
+    board_poly = find_board_outline_tight(source_files, pattern, lines)
+    pp, board_poly_int = prepare_panel(source_files, pattern, lines, board_poly, output_file, bake_text)
+    
+    if return_all:
+        return {'panel': pp, 'board_poly': board_poly, 'board_poly_int': board_poly_int}
+    
+    return pp
+    
+def prepare_panel(source_files, pattern, lines, board_poly, output_file, bake_text):
         
     pp = pnl.Panel(output_file)
     
@@ -272,7 +289,7 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
             inheritDrc=False,
             bakeText=bake_text)
         
-    board_poly = find_board_outline_tight(source_files, pattern, lines)
+    
 #        poly = src.get_board_outline(x_pos, y_pos, angle)
 #        polys.append(no_holes(poly))
 #        holes.extend(shp.Polygon(intr) for intr in poly.interiors)
@@ -290,7 +307,7 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
     
     #print('handle lines?')
     
-    for w,sx,sy,ex,ey in lines:
+    for sx,sy,ex,ey,w in lines:
         if sx is None: sx=board_poly.bounds[0]
         if sy is None: sy=board_poly.bounds[1]
         if ex is None: ex=board_poly.bounds[2]
@@ -298,10 +315,11 @@ def prepare_panel(source_files, pattern, lines, output_file, bake_text=False, re
         add_line(pp.board, x0=sx,y0=sy,x1=ex,y1=ey, layers=[pcbnew.F_SilkS, pcbnew.B_SilkS], width=w)
     
     pp.save()
-    if return_all:
-        return {'panel': pp, 'polys': polys, 'board_poly': board_poly, 'board_poly_int': board_poly_int}
+    return pp, board_poly_int
     
-    return pp
+    
+
+    
     
 def no_holes(poly):
     if poly.geom_type=='MultiPolygon':
@@ -349,21 +367,51 @@ def join_poly(left, right, max_gap=5):
         q0,d0 = find_closest(boundary_right, p0)
         q1,d1 = find_closest(boundary_right, p1)
         
+        #if is_straight(p0,q1) and is_straight(p1,q1):
         if d0 < max_gap and d1 < max_gap:
-            #add polygon from four points
+        
+                #add polygon from four points
             result.append(shp.Polygon([p0,p1,q1,q0,p0]))
 
     for (p0,p1) in iter_pairs(iter_points(boundary_right)):
         q0,d0 = find_closest(boundary_left, p0)
         q1,d1 = find_closest(boundary_left, p1)
         
-        if is_straight(p0,q1) and is_straight(p1,q1):
-            if d0 < max_gap and d1 < max_gap:
+        #if is_straight(p0,q1) and is_straight(p1,q1):
+        if d0 < max_gap and d1 < max_gap:
                 #add polygon from four points
-                result.append(shp.Polygon([p0,p1,q1,q0,p0]))
+            result.append(shp.Polygon([p0,p1,q1,q0,p0]))
     return result
     
+    
+    
+def join_poly_inner(left, right, max_gap=5):
+    
+    boundary_left = left.boundary
+    boundary_right = right.boundary   
+    
+    result = []
+    for (p0, p1) in iter_pairs(iter_points(boundary_left)):
+        if boundary_right.distance(p0)>max_gap or boundary_right.distance(p1) > max_gap:
+            continue
+            
+        q0,d0 = find_closest(boundary_right, p0)
+        q1,d1 = find_closest(boundary_right, p1)
+        if is_straight(p0,q1) and is_straight(p1,q1):
+            if d0 < max_gap and d1 < max_gap:        
+                #add polygon from four points
+                result.append(shp.Polygon([p0,p1,q1,q0,p0]))
+    
+    return result
 
+def join_poly_p(left, right, max_gap=5):
+    return join_poly_inner(left, right,max_gap)+join_poly_inner(right,left,max_gap)
+
+    
+    
+    
+    
+    
 def fill_gaps(polys, max_gap=5):
     if len(polys)==0:
         raise Exception("no polys")

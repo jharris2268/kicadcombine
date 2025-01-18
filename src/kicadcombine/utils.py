@@ -1,3 +1,6 @@
+import re
+import hashlib
+
 get_num=lambda x: ('f',float(x)) if '.' in x else ('i', int(x))
 
 num_str=lambda i,p: '%d' % p if i=='i' else '%0.6f' % p
@@ -6,7 +9,8 @@ num_str_null=lambda w, x: '' if x is None else "%s%s" % (w,num_str(*x))
 num_repr=lambda x: '' if x is None else "%s %s" % (x[0],x[1])
 
 
-import re
+
+
 
 name_re = re.compile('^[A-Z][1-9][0-9]+$')
 def next_name(ll, letter=None):
@@ -107,3 +111,11 @@ class Bounds:
         if i==3: return self.max_y
         raise IndexError
 
+
+def sha256_digest(path):
+    dd=hashlib.sha256()
+    ff=open(path, 'rb')
+    dd.update(ff.read())
+    
+    return dd.hexdigest()
+    

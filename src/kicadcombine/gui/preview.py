@@ -44,8 +44,11 @@ class PreviewPanel:
         
         if self.parent.board_polygon:
             bo = self.parent.board_polygon.boundary
-            
-            self.ax.plot(bo.xy[0], bo.xy[1], c='k', lw=1)
+            if bo.geom_type=='LineString':
+                self.ax.plot(bo.xy[0], bo.xy[1], c='k', lw=1)
+            elif bo.geom_type=='MultiLineString':
+                for bop in bo.geoms:
+                    self.ax.plot(bop.xy[0], bop.xy[1], c='k', lw=1)
         
         self.ax.set_xlim(-10, self.parent.board_width+10)
         self.ax.set_ylim(self.parent.board_height+10, -10)

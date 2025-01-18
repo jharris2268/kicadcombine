@@ -191,24 +191,27 @@ class KicadCombineFrameBase ( wx.Frame ):
         gbSizer1.Add( self.m_staticText29, wx.GBPosition( 11, 0 ), wx.GBSpan( 1, 5 ), wx.ALL, 5 )
 
         self.silkscreen_lines_view = wx.dataview.DataViewListCtrl( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.dataview.DV_MULTIPLE|wx.dataview.DV_ROW_LINES )
-        gbSizer1.Add( self.silkscreen_lines_view, wx.GBPosition( 12, 0 ), wx.GBSpan( 1, 12 ), wx.ALL|wx.EXPAND, 5 )
+        gbSizer1.Add( self.silkscreen_lines_view, wx.GBPosition( 12, 0 ), wx.GBSpan( 3, 12 ), wx.ALL|wx.EXPAND, 5 )
 
         self.add_silkscreenline_row = wx.Button( self, wx.ID_ANY, _(u"Add Row"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.add_silkscreenline_row, wx.GBPosition( 13, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        gbSizer1.Add( self.add_silkscreenline_row, wx.GBPosition( 15, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline4 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
-        gbSizer1.Add( self.m_staticline4, wx.GBPosition( 10, 13 ), wx.GBSpan( 1, 3 ), wx.EXPAND |wx.ALL, 5 )
+        gbSizer1.Add( self.m_staticline4, wx.GBPosition( 10, 13 ), wx.GBSpan( 1, 2 ), wx.EXPAND |wx.ALL, 5 )
 
         self.m_staticText30 = wx.StaticText( self, wx.ID_ANY, _(u"Output"), wx.DefaultPosition, wx.DefaultSize, 0 )
         self.m_staticText30.Wrap( -1 )
 
         gbSizer1.Add( self.m_staticText30, wx.GBPosition( 11, 13 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
-        self.output_filename_entry = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.output_filename_entry, wx.GBPosition( 12, 13 ), wx.GBSpan( 1, 3 ), wx.ALL, 5 )
+        self.output_filename_entry = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
+        gbSizer1.Add( self.output_filename_entry, wx.GBPosition( 12, 14 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 
-        self.call_merge = wx.Button( self, wx.ID_ANY, _(u"Merge"), wx.DefaultPosition, wx.DefaultSize, 0 )
-        gbSizer1.Add( self.call_merge, wx.GBPosition( 13, 13 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+        self.set_ouput_filename_button = wx.Button( self, wx.ID_ANY, _(u"Set Ouput Filename"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        gbSizer1.Add( self.set_ouput_filename_button, wx.GBPosition( 12, 13 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+
+        self.make_panel_button = wx.Button( self, wx.ID_ANY, _(u"Make Panel"), wx.DefaultPosition, wx.DefaultSize, 0 )
+        gbSizer1.Add( self.make_panel_button, wx.GBPosition( 13, 13 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
 
         self.m_staticline5 = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_VERTICAL )
         self.m_staticline5.SetMaxSize( wx.Size( 5,-1 ) )
@@ -223,13 +226,13 @@ class KicadCombineFrameBase ( wx.Frame ):
         self.preview_panel = wx.Panel( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.TAB_TRAVERSAL )
         self.preview_panel.SetMinSize( wx.Size( 600,600 ) )
 
-        gbSizer1.Add( self.preview_panel, wx.GBPosition( 1, 13 ), wx.GBSpan( 8, 3 ), wx.ALL|wx.EXPAND|wx.FIXED_MINSIZE, 5 )
+        gbSizer1.Add( self.preview_panel, wx.GBPosition( 1, 13 ), wx.GBSpan( 8, 2 ), wx.ALL|wx.EXPAND|wx.FIXED_MINSIZE, 5 )
 
 
         gbSizer1.AddGrowableCol( 14 )
         gbSizer1.AddGrowableRow( 1 )
         gbSizer1.AddGrowableRow( 8 )
-        gbSizer1.AddGrowableRow( 12 )
+        gbSizer1.AddGrowableRow( 13 )
 
         self.SetSizer( gbSizer1 )
         self.Layout()

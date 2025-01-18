@@ -629,7 +629,7 @@ def combine_all(parts, spec, output_prfx, width=None, height=None, silkscreen_li
             if silkscreen_lines and lyr in ('F_Silkscreen', 'B_Silkscreen'):
                 apertures={}
                 
-                for w, start_x, start_y, end_x, end_y in silkscreen_lines:
+                for start_x, start_y, end_x, end_y, w in silkscreen_lines:
                     if start_x is None: start_x=0
                     if start_y is None: start_y=0
                     if end_x is None: end_x=width

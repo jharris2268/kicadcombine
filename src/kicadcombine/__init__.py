@@ -92,17 +92,17 @@ DESIGN = [
 ]
 
 LINES = [
-    #width, sx,     sy,     ex,     ey
-    [1,     None,   20.5,   None,   20.5],
-    [1,     None,   44.5,   None,   44.5],
-    [1,     49.5,   0,      49.5,   44.5],
+    #sx,     sy,     ex,     ey,    width, 
+    [None,   20.5,   None,   20.5,  None],
+    [None,   44.5,   None,   44.5,  None],
+    [49.5,   0,      49.5,   44.5,  None],
 ]
 
 EXAMPLE_LOCATIONS = [
     '/home/james/elec/misc/small_boards',
     '/home/james/elec/misc/other_small_boards',
     '/home/james/elec/pi_pico/pico_siggen/hardware/panels/panels.kicad_pcb',
-    '/home/james/elec/6502-boards/rom-adaptor-smd/rom-adaptor-smd.kicad_pcb'
+    
 ]
 
 def main():
@@ -121,10 +121,12 @@ def main():
             return parts, combined
     
     elif 'kicaddemo' in sys.argv:
-        source_files = get_source_files(EXAMPLE_LOCATIONS)
+        source_files, duplicates = get_source_files(EXAMPLE_LOCATIONS)
+        if duplicates:
+            print("have %d duplicate source designs..." % len(duplicates))
+            print("\n".join(str(y) for x,y in duplicates))        
         
-        
-        prepare_panel(source_files, DESIGN, LINES, 'combined_board/combined_board.kicad_pcb')
+        prepare_panel_check(source_files, DESIGN, LINES, 'combined_board/combined_board.kicad_pcb')
         
         
             

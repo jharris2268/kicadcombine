@@ -120,6 +120,7 @@ class SilkscreenLineModel(dv.PyDataViewModel):
         obj=self.lines[idx]
         
         obj.set_value(col, value)
+        self.parent.update_board_size()
         return True
     def IsContainer(self, item):
         return False
